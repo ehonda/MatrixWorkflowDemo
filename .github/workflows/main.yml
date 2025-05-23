@@ -1,0 +1,44 @@
+name: Matrix Demo Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-tool:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [nail, screw]
+    outputs:
+      tool: ${{ steps.set_tool.outputs.tool_name }}
+    steps:
+      - name: Determine tool for ${{ matrix.component }}
+        id: set_tool
+        run: |
+          if [[ "${{ matrix.component }}" == "nail" ]]; then
+            echo "tool_name=hammer" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.component }}" == "screw" ]]; then
+            echo "tool_name=screwdriver" >> $GITHUB_OUTPUT
+          fi
+
+  execute:
+    runs-on: ubuntu-latest
+    needs: get-tool
+    strategy:
+      matrix:
+        component: [nail, screw]
+    steps:
+      - name: Execute with ${{ matrix.component }}
+        run: |
+          TOOL="${{ needs.get-tool.outputs.tool }}"
+          COMPONENT="${{ matrix.component }}"
+          echo "⚙️ Received tool: $TOOL for component: $COMPONENT"
+
+          if [[ "$COMPONENT" == "nail" && "$TOOL" == "hammer" ]]; then
+            echo "Hammering the $COMPONENT... 🔨"
+          elif [[ "$COMPONENT" == "screw" && "$TOOL" == "screwdriver" ]]; then
+            echo "Screwing the $COMPONENT... 🔩"
+          else
+            echo "❌ Error: Wrong tool! Got $TOOL for $COMPONENT."
