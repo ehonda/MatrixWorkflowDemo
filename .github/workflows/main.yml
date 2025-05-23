@@ -12,15 +12,16 @@ jobs:
       matrix:
         component: [nail, screw]
     outputs:
-      tool: ${{ steps.set_tool.outputs.tool_name }}
+      tool_nail: ${{ steps.set_tool.outputs.tool_nail }}
+      tool_screw: ${{ steps.set_tool.outputs.tool_screw }}
     steps:
       - name: Determine tool for ${{ matrix.component }}
         id: set_tool
         run: |
           if [[ "${{ matrix.component }}" == "nail" ]]; then
-            echo "tool_name=hammer" >> $GITHUB_OUTPUT
+            echo "tool_nail=hammer" >> $GITHUB_OUTPUT
           elif [[ "${{ matrix.component }}" == "screw" ]]; then
-            echo "tool_name=screwdriver" >> $GITHUB_OUTPUT
+            echo "tool_screw=screwdriver" >> $GITHUB_OUTPUT
           fi
 
   execute:
@@ -32,8 +33,15 @@ jobs:
     steps:
       - name: Execute with ${{ matrix.component }}
         run: |
-          TOOL="${{ needs.get-tool.outputs.tool }}"
           COMPONENT="${{ matrix.component }}"
+          TOOL="" # Initialize TOOL
+
+          if [[ "$COMPONENT" == "nail" ]]; then
+            TOOL="${{ needs.get-tool.outputs.tool_nail }}"
+          elif [[ "$COMPONENT" == "screw" ]]; then
+            TOOL="${{ needs.get-tool.outputs.tool_screw }}"
+          fi
+          
           echo "⚙️ Received tool: $TOOL for component: $COMPONENT"
 
           if [[ "$COMPONENT" == "nail" && "$TOOL" == "hammer" ]]; then
