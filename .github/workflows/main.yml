@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  get-tool:
+  get-tool: # Original get-tool job
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,7 +15,7 @@ jobs:
       tool_nail: ${{ steps.set_tool.outputs.tool_nail }}
       tool_screw: ${{ steps.set_tool.outputs.tool_screw }}
     steps:
-      - name: Determine tool for ${{ matrix.component }}
+      - name: Determine tool for ${{ matrix.component }} (Original)
         id: set_tool
         run: |
           if [[ "${{ matrix.component }}" == "nail" ]]; then
@@ -24,30 +24,61 @@ jobs:
             echo "tool_screw=screwdriver" >> $GITHUB_OUTPUT
           fi
 
-  execute:
+  execute: # Original execute job, depends on get-tool
     runs-on: ubuntu-latest
     needs: get-tool
     strategy:
       matrix:
         component: [nail, screw]
     steps:
-      - name: Execute with ${{ matrix.component }}
+      - name: Execute with ${{ matrix.component }} (Original)
         run: |
           COMPONENT="${{ matrix.component }}"
-          TOOL="" # Initialize TOOL
-
+          TOOL=""
           if [[ "$COMPONENT" == "nail" ]]; then
             TOOL="${{ needs.get-tool.outputs.tool_nail }}"
           elif [[ "$COMPONENT" == "screw" ]]; then
             TOOL="${{ needs.get-tool.outputs.tool_screw }}"
           fi
           
-          echo "⚙️ Received tool: $TOOL for component: $COMPONENT"
+          echo "[Original Workflow] ⚙️ Received tool: $TOOL for component: $COMPONENT"
 
           if [[ "$COMPONENT" == "nail" && "$TOOL" == "hammer" ]]; then
-            echo "Hammering the $COMPONENT... 🔨"
+            echo "[Original Workflow] Hammering the $COMPONENT... 🔨"
           elif [[ "$COMPONENT" == "screw" && "$TOOL" == "screwdriver" ]]; then
-            echo "Screwing the $COMPONENT... 🔩"
+            echo "[Original Workflow] Screwing the $COMPONENT... 🔩"
           else
-            echo "❌ Error: Wrong tool! Got $TOOL for $COMPONENT."
+            echo "[Original Workflow] ❌ Error: Wrong tool! Got $TOOL for $COMPONENT."
+          fi
+
+  execute-with-tool: # New single job
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [nail, screw]
+    steps:
+      - name: Determine tool for ${{ matrix.component }} (Single Job)
+        id: determine_tool_step
+        run: |
+          _tool=""
+          if [[ "${{ matrix.component }}" == "nail" ]]; then
+            _tool="hammer"
+          elif [[ "${{ matrix.component }}" == "screw" ]]; then
+            _tool="screwdriver"
+          fi
+          echo "tool_name=${_tool}" >> $GITHUB_OUTPUT
+
+      - name: Execute with ${{ matrix.component }} using determined tool (Single Job)
+        run: |
+          COMPONENT="${{ matrix.component }}"
+          TOOL="${{ steps.determine_tool_step.outputs.tool_name }}"
+
+          echo "[Single Job Workflow] ⚙️ Component: $COMPONENT, Tool: $TOOL"
+
+          if [[ "$COMPONENT" == "nail" && "$TOOL" == "hammer" ]]; then
+            echo "[Single Job Workflow] Hammering the $COMPONENT... 🔨"
+          elif [[ "$COMPONENT" == "screw" && "$TOOL" == "screwdriver" ]]; then
+            echo "[Single Job Workflow] Screwing the $COMPONENT... 🔩"
+          else
+            echo "[Single Job Workflow] ❌ Error: Wrong tool for $COMPONENT! Got $TOOL."
           fi
