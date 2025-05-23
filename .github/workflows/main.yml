@@ -42,3 +42,4 @@ jobs:
             echo "Screwing the $COMPONENT... 🔩"
           else
             echo "❌ Error: Wrong tool! Got $TOOL for $COMPONENT."
+          fi
